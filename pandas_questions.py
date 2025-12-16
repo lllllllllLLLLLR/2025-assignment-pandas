@@ -12,7 +12,7 @@ import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
 
-# 2025-assignment-pandas/
+
 def load_data():
     """Load data from the CSV files referundum/regions/departments."""
     referendum = pd.read_csv('data/referendum.csv', sep=';')
@@ -36,7 +36,7 @@ def merge_regions_and_departments(regions, departments):
         regions, departments, on='code_reg'
     )
     return regions_and_departments[['code_reg', 'name_reg', 'code_dep',
-                                      'name_dep']]
+                                    'name_dep']]
 
 
 def merge_referendum_and_areas(referendum, regions_and_departments):
@@ -51,7 +51,9 @@ def merge_referendum_and_areas(referendum, regions_and_departments):
     referendum_filtered = referendum[
         ~referendum['Department code'].str.contains('Z')
     ].copy()
-    referendum_filtered['Department code'] = referendum_filtered['Department code'].str.zfill(2)
+    referendum_filtered['Department code'] = (
+        referendum_filtered['Department code'].str.zfill(2)
+    )
 
     merged_df = pd.merge(
         referendum_filtered,
@@ -81,7 +83,6 @@ def compute_referendum_result_by_regions(referendum_and_areas):
 
 def plot_referendum_map(referendum_result_by_regions):
     """Plot a map with the results from the referendum.
-
     * Load the geographic data with geopandas from `regions.geojson`.
     * Merge these info into `referendum_result_by_regions`.
     * Use the method `GeoDataFrame.plot` to display the result map. The results
@@ -89,30 +90,29 @@ def plot_referendum_map(referendum_result_by_regions):
     * Return a gpd.GeoDataFrame with a column 'ratio' containing the results.
     """
     geo_regions = gpd.read_file('data/regions.geojson')
-    
     # Calculate ratio
-    referendum_result_by_regions['ratio'] = (
-        referendum_result_by_regions['Choice A'] / 
-        (referendum_result_by_regions['Choice A'] + referendum_result_by_regions['Choice B'])
-    )
-    
+    choice_a = referendum_result_by_regions['Choice A']
+    choice_b = referendum_result_by_regions['Choice B']
+    referendum_result_by_regions['ratio'] = choice_a / (choice_a + choice_b)
     # Merge geo data
     map_df = geo_regions.merge(
         referendum_result_by_regions,
         left_on='code',
         right_index=True
     )
-    
     # Plotting
-    map_df.plot(column='ratio', legend=True,
-                legend_kwds={'label': "Ratio of Choice A votes",
-                             'orientation': "horizontal"})
-    
+    map_df.plot(
+        column='ratio',
+        legend=True,
+        legend_kwds={
+            'label': "Ratio of Choice A votes",
+            'orientation': "horizontal"
+        }
+    )
     return map_df
 
 
 if __name__ == "__main__":
-
     referendum, df_reg, df_dep = load_data()
     regions_and_departments = merge_regions_and_departments(
         df_reg, df_dep
@@ -124,6 +124,5 @@ if __name__ == "__main__":
         referendum_and_areas
     )
     print(referendum_results)
-
     plot_referendum_map(referendum_results)
     plt.show()
